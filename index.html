@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Park Factors Cuba - Estadios</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <link rel="icon" type="image/png" href="logo.png">
+</head>
+<body>
+
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand d-flex align-items-center" href="#">
+                <img src="logo.png" alt="Baseball Cuba Data Logo" class="navbar-logo me-2">
+                Baseball Cuba Data | Park Factors
+            </a>
+            <div class="navbar-nav">
+                <a class="nav-link active" id="tab-dashboard" href="#" onclick="showTab('dashboard')">Dashboard</a>
+                <a class="nav-link" id="tab-stadiums" href="#" onclick="showTab('stadiums')">Estadios</a>
+                <a class="nav-link" id="tab-methodology" href="#" onclick="showTab('methodology')">Metodología</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <!-- ========================================== -->
+        <!-- SECCIÓN: DASHBOARD -->
+        <!-- ========================================== -->
+        <div id="section-dashboard">
+            <div class="row mb-4 align-items-end">
+                <div class="col-md-4">
+                    <label for="selectRegime" class="form-label fw-bold text-primary">Régimen:</label>
+                    <select id="selectRegime" class="form-select" onchange="updateSeasons()">
+                        <option value="">Cargando...</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="selectSeason" class="form-label fw-bold">Serie:</label>
+                    <select id="selectSeason" class="form-select" onchange="renderDashboard()"></select>
+                </div>
+                <div class="col-md-3">
+                    <label for="selectMetric" class="form-label fw-bold">Métrica:</label>
+                    <select id="selectMetric" class="form-select" onchange="renderDashboard()">
+                        <option value="R">Carreras (R)</option>
+                        <option value="1B">Sencillos (1B)</option>
+                        <option value="2B">Dobles (2B)</option>
+                        <option value="3B">Triples (3B)</option>
+                        <option value="HR">Home Runs (HR)</option>
+                        <option value="BB">Bases por Bolas (BB)</option>
+                        <option value="SO">Ponches (SO)</option>
+                        <option value="HBP">Golpeados (HBP)</option>
+                    </select>
+                </div>
+            </div>
+
+            <div id="regimeWarning" class="alert alert-warning d-none" role="alert">
+                ⚠️ Los PF no son comparables entre regímenes debido a cambios en el formato y número de juegos.
+            </div>
+
+            <div class="card mb-4 shadow-sm">
+                <div class="card-body">
+                    <h5 class="card-title">Factor de Parque (Ventana) e Intervalo de Confianza (95%)</h5>
+                    <div id="plotlyChart" style="width:100%; height:60vh; min-height:300px;"></div>
+                </div>
+            </div>
+
+            <div class="card shadow-sm mb-3">
+                <div class="card-body">
+                    <h5 class="card-title">Detalle y Clasificación</h5>
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover table-sm align-middle" id="dataTable">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>Estadio</th>
+                                    <th class="text-center">PF Final</th>
+                                    <th class="text-center">IC 95%</th>
+                                    <th>Clasificación</th>
+                                    <th class="text-center">Juegos</th>
+                                    <th>Flags</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- LEYENDA -->
+            <div class="card shadow-sm mb-5">
+                <div class="card-body">
+                    <h6 class="card-title fw-bold">Leyenda</h6>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <p class="mb-1"><strong>Clasificación:</strong></p>
+                            <ul class="list-unstyled mb-0 small">
+                                <li><span class="badge bg-secondary text-dark">= Neutral</span> Sin efecto o trivial.</li>
+                                <li><span class="badge bg-success">🟢 Efecto</span> Efecto confirmado (Leve, Moderado o Fuerte).</li>
+                                <li><span class="badge bg-warning text-dark">🟡 Sugerente</span> Posible efecto, no confirmado por muestra.</li>
+                                <li><span class="badge bg-danger">🔴 Inconcluso</span> Muestra insuficiente para concluir.</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-4">
+                            <p class="mb-1"><strong>Dirección:</strong></p>
+                            <ul class="list-unstyled mb-0 small">
+                                <li>▲ Favorece al bateo (PF > 1.00)</li>
+                                <li>▼ Favorece al pitcheo (PF < 1.00)</li>
+                                <li>= Neutral</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-4">
+                            <p class="mb-1"><strong>Flags de Contexto:</strong></p>
+                            <ul class="list-unstyled mb-0 small">
+                                <li><span class="badge bg-info text-dark">Muestra Reducida</span> Serie 65 (44 juegos).</li>
+                                <li><span class="badge bg-warning text-dark">Ventana Incompleta</span> Menos de 3 años disponibles.</li>
+                                <li><span class="badge bg-primary">Compartido</span> Estadio usado por varios equipos.</li>
+                                <li><span class="badge bg-dark">Temporal</span> Sede de un solo año.</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        </div>
+
+        <!-- ========================================== -->
+        <!-- SECCIÓN: ESTADIOS -->
+        <!-- ========================================== -->
+        <div id="section-stadiums" style="display: none;">
+            <div class="row mb-4 align-items-end">
+                <div class="col-md-4">
+                    <label for="selectStadium" class="form-label fw-bold text-primary">Seleccionar Estadio:</label>
+                    <select id="selectStadium" class="form-select" onchange="updateStadiumViewOptions()">
+                        <option value="">Cargando estadios...</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="selectViewMode" class="form-label fw-bold">Mostrar:</label>
+                    <select id="selectViewMode" class="form-select" onchange="toggleEditionSelect()">
+                        <option value="totals">Totales Históricos</option>
+                        <option value="by_edition">Por Serie</option>
+                    </select>
+                </div>
+                <div class="col-md-3" id="editionContainer" style="display: none;">
+                    <label for="selectEdition" class="form-label fw-bold">Serie:</label>
+                    <select id="selectEdition" class="form-select" onchange="renderStadium()"></select>
+                </div>
+            </div>
+
+            <!-- Tarjetas de Resumen -->
+            <div class="row mb-4">
+                <div class="col-md-3">
+                    <div class="card shadow-sm text-center bg-light h-100">
+                        <div class="card-body">
+                            <h6 class="text-muted text-uppercase mb-1">Equipo Principal</h6>
+                            <h3 class="mb-0 fw-bold text-dark" id="stat-team">-</h3>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card shadow-sm text-center bg-light h-100">
+                        <div class="card-body">
+                            <h6 class="text-muted text-uppercase mb-1">Juegos</h6>
+                            <h3 class="mb-0 fw-bold" id="stat-games">-</h3>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card shadow-sm text-center bg-light h-100">
+                        <div class="card-body">
+                            <h6 class="text-muted text-uppercase mb-1">Carreras</h6>
+                            <h3 class="mb-0 fw-bold text-primary" id="stat-runs">-</h3>
+                            <small class="text-muted" id="stat-runs-pg">- / juego</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card shadow-sm text-center bg-light h-100">
+                        <div class="card-body">
+                            <h6 class="text-muted text-uppercase mb-1">Hits</h6>
+                            <h3 class="mb-0 fw-bold text-success" id="stat-hits">-</h3>
+                            <small class="text-muted" id="stat-hits-pg">- / juego</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tabla de Estadísticas Detalladas -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-white fw-bold">
+                    Estadísticas Ofensivas Totales en el Estadio
+                </div>
+                <div class="table-responsive">
+                <div class="card-body p-0">
+                    <table class="table table-sm table-bordered text-center mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>1B</th>
+                                <th>2B</th>
+                                <th>3B</th>
+                                <th>HR</th>
+                                <th>BB</th>
+                                <th>SO</th>
+                                <th>HBP</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td id="stat-b1">-</td>
+                                <td id="stat-b2">-</td>
+                                <td id="stat-b3">-</td>
+                                <td id="stat-hr" class="fw-bold text-danger">-</td>
+                                <td id="stat-bb">-</td>
+                                <td id="stat-so">-</td>
+                                <td id="stat-hbp">-</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                </div>
+            </div>
+
+            <!-- Fila de Park Factors y Gráfico -->
+            <div class="row">
+                <!-- Park Factors -->
+                <div class="col-md-4 mb-4">
+                    <div class="card shadow-sm h-100">
+                        <div class="card-header bg-dark text-white fw-bold">Park Factors</div>
+                        <div class="card-body" id="pf-container"></div>
+                    </div>
+                </div>
+                <!-- Gráfico Zonas -->
+                <div class="col-md-8 mb-4">
+                    <div class="card shadow-sm h-100">
+                        <div class="card-body d-flex flex-column">
+                            <h5 class="card-title mb-3">Distribución de Home Runs por Zona</h5>
+                            <div id="fieldContainer" class="baseball-field-container"></div>
+                            <div id="fieldLegend" class="field-legend"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========================================== -->
+        <!-- SECCIÓN: METODOLOGÍA (Mantenida de antes) -->
+        <!-- ========================================== -->
+        <!-- SECCIÓN: METODOLOGÍA AMPLIADA -->
+        <div id="section-methodology" style="display: none;">
+            <div class="card shadow-sm mb-5">
+                <div class="card-body p-4 p-md-5">
+                    
+                    <h1 class="mb-4">Metodología de Cálculo de Park Factors (Series 32–65)</h1>
+                    <p class="lead">Este documento detalla el proceso estadístico utilizado para aislar el efecto de cada estadio en la Serie Nacional Cubana, ajustando por la calidad de los rivales, los cambios de formato de la liga y las particularidades de las sedes en Cuba.</p>
+                    
+                    <hr class="my-4">
+
+                    <h2>1. ¿Qué es un Park Factor (PF)?</h2>
+                    <p>El Park Factor cuantifica cuánto favorece o deprime un estadio la ofensiva. La escala es relativa: <strong>PF = 1.00</strong> representa un parque perfectamente neutral. Un valor de 1.10 indica que el estadio aumenta la producción ofensiva en un 10%; un valor de 0.90 indica que la reduce en un 10%.</p>
+                    <p>Para evitar sesgos, el PF se calcula comparando el rendimiento de un equipo en su estadio (Local) contra su rendimiento en otros estadios (Visitante).</p>
+
+                    <h2>2. El Desafío Cubano: Regímenes y Formatos</h2>
+                    <p>A diferencia de las Grandes Ligas, la Serie Nacional ha cambiado drásticamente de formato. Para que las comparaciones sean válidas, hemos dividido la historia reciente en tres <strong>Regímenes</strong>. Las ventanas móviles (que explican más abajo) <strong>nunca cruzan de un régimen a otro</strong>.</p>
+                    <ul>
+                        <li><strong>Régimen A (32–51):</strong> Todos contra todos, 90 juegos, con múltiples cambios de sede.</li>
+                        <li><strong>Régimen B (52–59):</strong> Dos fases. Solo usamos la primera fase (Clasificatoria) para evitar el sesgo de los equipos eliminados.</li>
+                        <li><strong>Régimen C (60–65):</strong> Formato moderno, 16 equipos. La Serie 65 tuvo solo 44 juegos.</li>
+                    </ul>
+
+                    <h2>3. La Unidad de Análisis: El Estadio Físico</h2>
+                    <p>El PF mide el efecto del <strong>cemento</strong>, no del equipo. Por eso, la unidad de análisis es el estadio físico en un período de uso continuo. Aquí es donde la base de datos cubana presenta desafíos únicos:</p>
+
+                    <div class="row mt-4">
+                        <div class="col-md-6 mb-3">
+                            <div class="card h-100 border-primary">
+                                <div class="card-header bg-primary text-white fw-bold">Ejemplo 1: Estadios Compartidos</div>
+                                <div class="card-body">
+                                    <p class="card-text small">El <strong>Estadio Latinoamericano</strong> es una sola entidad física. En las series 32–43 y 46–48, albergó tanto a Metros como a Industriales.</p>
+                                    <p class="card-text small"><strong>Regla:</strong> El PF del Latino en esos años se calcula sumando los partidos de <em>ambos equipos</em> como locales, y comparándolo con la suma de sus partidos como visitantes. No se calculan dos PFs separados para el mismo estadio.</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="card h-100 border-warning">
+                                <div class="card-header bg-warning text-dark fw-bold">Ejemplo 2: Ventanas Discontinuas</div>
+                                <div class="card-body">
+                                    <p class="card-text small">Mayabeque jugó la <strong>Serie 58</strong> en el estadio "Héroes de Mayabeque", pero en la <strong>Serie 59</strong> volvió a su sede habitual, "Nelson Fernández".</p>
+                                    <p class="card-text small"><strong>Regla:</strong> Para calcular el PF de Nelson Fernández en la Serie 59, no podemos usar el año 58. Usamos una <em>ventana discontinua</em>: 59 (peso 3), 57 (peso 2) y 56 (peso 1). El 58 se ignora por completo para esa sede.</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="card h-100 border-danger">
+                                <div class="card-header bg-danger text-white fw-bold">Ejemplo 3: Sedes Temporales</div>
+                                <div class="card-body">
+                                    <p class="card-text small">En la <strong>Serie 45</strong>, Isla de la Juventud jugó en el estadio "15 de mayo" (y Ciego de Ávila en "Paquito Espinoza") por remodelaciones.</p>
+                                    <p class="card-text small"><strong>Regla:</strong> Al ser un estadio usado solo por un año, no hay ventana móvil. Se publica el PF crudo de ese único año y se marca con el flag <span class="badge bg-dark">Temporal</span>.</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="card h-100 border-info">
+                                <div class="card-header bg-info text-dark fw-bold">Ejemplo 4: Calidad de Oponente</div>
+                                <div class="card-body">
+                                    <p class="card-text small">Si un equipo juega 10 partidos contra el campeón de la liga y 10 contra el último lugar, no es lo mismo.</p>
+                                    <p class="card-text small"><strong>Regla:</strong> Cada juego se pondera multiplicando por <code>1 + 0.2 * (Fuerza del Rival)</code>. Un juego contra un rival fuerte (+1) pesa 1.2; contra un rival débil (-1) pesa 0.8. Así, los parques se evalúan contra la competencia real que enfrentaron.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <h2 class="mt-4">4. El Pipeline de Cálculo (Paso a Paso)</h2>
+                    <ol class="list-group list-group-numbered mb-4">
+                        <li class="list-group-item"><strong>Fuerza del Rival:</strong> Calculamos el diferencial de carreras de cada equipo y lo normalizamos (0 = promedio, +1 = élite, -1 = débil).</li>
+                        <li class="list-group-item"><strong>PF Crudo Ponderado:</strong> Calculamos la tasa de eventos (Carreras, HR, etc.) por Comparecencia (PA) en casa, dividida entre la tasa de visita, aplicando el peso del rival a cada juego.</li>
+                        <li class="list-group-item"><strong>Ventana Móvil (Pesos 3-2-1):</strong> Para estabilizar la muestra, el PF de un año combina los datos de ese año y los dos anteriores, dando peso 3 al año actual, 2 al anterior y 1 al más antiguo. (Si es un estadio temporal, no hay ventana).</li>
+                        <li class="list-group-item"><strong>Normalización por Mediana:</strong> Dividimos el PF de cada estadio por la mediana de todos los estadios de ese año. Esto ajusta el PF a la época ofensiva de la liga (ej. si toda la liga bateó más en los 90, el PF se ajusta a la baja para no inflar el estadio).</li>
+                        <li class="list-group-item"><strong>Bootstrap (Intervalos de Confianza):</strong> Ejecutamos 1000 simulaciones remuestreando los años de la ventana. Esto nos da el margen de error y nos dice si el PF es estadísticamente real o puro ruido.</li>
+                    </ol>
+
+                    <h2>5. Clasificación y Confianza</h2>
+                    <p>Para no engañarnos con números extremos causados por muestras pequeñas, clasificamos los PF en dos dimensiones:</p>
+                    
+                    <table class="table table-sm table-bordered w-75 mb-4">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Magnitud (|PF - 1.00|)</th>
+                                <th>Confianza (IC 95%)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>Trivial:</strong> &lt; 0.03</td>
+                                <td><strong>Confirmado:</strong> El IC no incluye 1.00.</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Leve:</strong> 0.03 - 0.06</td>
+                                <td><strong>Sugerente:</strong> El IC incluye 1.00, pero es estrecho (ancho &lt; 0.20).</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Moderado:</strong> 0.06 - 0.10</td>
+                                <td><strong>Inconcluso:</strong> El IC incluye 1.00 y es muy ancho (ancho &ge; 0.20).</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Fuerte:</strong> &gt; 0.10</td>
+                                <td>—</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    
+                    <div class="alert alert-success">
+                        <strong>La combinación de ambas dimensiones genera la clasificación final:</strong>
+                        <ul class="mb-0 mt-2">
+                            <li><strong>⚪ Neutral:</strong> Sin efecto o trivial. No se debe ajustar.</li>
+                            <li><strong>🟢 Efecto (Leve/Moderado/Fuerte):</strong> Efecto real y confirmado estadísticamente. Se debe ajustar.</li>
+                            <li><strong>🟡 Sugerente:</strong> Los datos apuntan a un efecto, pero no es concluyente. Usar con cautela.</li>
+                            <li><strong>🔴 Inconcluso:</strong> No hay datos suficientes. El PF no es fiable.</li>
+                        </ul>
+                    </div>
+
+                    <h2>6. Limitaciones de este Estudio</h2>
+                    <ul class="small text-muted">
+                        <li>La muestra de juegos por equipo en la Serie Nacional es pequeña comparada con la MLB (~22 a 45 juegos de local). Las ventanas de 3 años ayudan, pero no lo eliminan por completo.</li>
+                        <li>La Serie 65 (44 juegos) tiene una muestra reducida. Se marca con un flag y su peso en la ventana es menor.</li>
+                        <li>Eventos raros como Triples (3B) o Golpeados (HBP) tienen intervalos de confianza muy anchos. Si el ancho supera 0.30, se marca como "Muestra Insuficiente".</li>
+                        <li>No contamos con tecnología Statcast (velocidad de salida, ángulo de batazo). El PF se basa puramente en los resultados del box score.</li>
+                    </ul>
+                    <!-- NUEVA SECCIÓN: ¿Cómo se usan los Park Factors? -->
+                    <h2 class="mt-5">7. ¿Cómo se usan los Park Factors?</h2>
+                    <p>Los Park Factors no son solo un dato curioso; son una herramienta fundamental para <strong>nivelar el terreno de juego</strong> en el análisis estadístico. A continuación, te explicamos sus usos más importantes.</p>
+
+                    <div class="row mt-4">
+                        <div class="col-md-6 mb-3">
+                            <div class="card h-100 border-success">
+                                <div class="card-header bg-success text-white fw-bold">1. Ajustar estadísticas de jugadores</div>
+                                <div class="card-body">
+                                    <p class="card-text small">Si un bateador juega en un parque que infla las carreras (PF = 1.15), sus números se verán mejores de lo que realmente son. El PF permite "desinflarlos" para compararlos justamente con jugadores de parques pitchers (PF = 0.85).</p>
+                                    <div class="bg-light p-2 rounded mt-2">
+                                        <small class="text-muted"><strong>Fórmula:</strong></small><br>
+                                        <code class="small">Stat Ajustada = Stat Original / PF</code>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <div class="card h-100 border-info">
+                                <div class="card-header bg-info text-dark fw-bold">2. Evaluar el talento real de un pelotero</div>
+                                <div class="card-body">
+                                    <p class="card-text small">Imagina a dos bateadores que conectaron 20 HR. El bateador A juega en un parque con PF de HR de 1.20 (muy ofensivo). El bateador B juega en uno de 0.80 (muy pitcher-friendly).</p>
+                                    <p class="card-text small mb-0">A pesar de tener los mismos HR, el bateador B demostró <strong>más poder real</strong> al hacerlo en un parque que ahoga los jonrones.</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <div class="card h-100 border-warning">
+                                <div class="card-header bg-warning text-dark fw-bold">3. Proyecciones y Fantasy Baseball</div>
+                                <div class="card-body">
+                                    <p class="card-text small">Si un jugador cambia de equipo (y de estadio) en la temporada baja, puedes usar los PF para predecir cómo cambiarán sus números. Si se muda a un parque con PF de HR de 1.30, es probable que sus HR aumenten significativamente.</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <div class="card h-100 border-primary">
+                                <div class="card-header bg-primary text-white fw-bold">4. Estrategia de apuestas y análisis de partidos</div>
+                                <div class="card-body">
+                                    <p class="card-text small">Al analizar un partido, debes considerar el estadio donde se jugará. Un partido entre dos equipos ofensivos en un parque con PF de Carreras de 1.10 tenderá a tener un marcador más alto que el mismo partido en un parque con PF de 0.90.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <h3 class="mt-5">Ejemplo Práctico de Ajuste</h3>
+                    <p>Supongamos que <strong>Juan Pérez</strong> conectó <strong>30 HR</strong> en un estadio con un <strong>PF de HR de 1.25</strong> (muy favorable al bateo). Sus jonrones están inflados por el parque. Si jugara en un parque neutral (PF = 1.00), su cantidad esperada de HR sería:</p>
+
+                    <div class="alert alert-secondary text-center my-3">
+                        <h4 class="alert-heading mb-1">30 HR / 1.25 = 24 HR</h4>
+                        <p class="mb-0 small text-muted">Esta es su "tasa neutralizada por el parque".</p>
+                    </div>
+
+                    <p>Este ajuste no significa que sus HR no hayan existido; significa que su <em>habilidad real</em> está más cerca de 24 HR que de 30 HR. Si otro jugador conectó 26 HR en un parque con PF de HR de 0.90 (pitcher-friendly), su ajuste sería:</p>
+
+                    <div class="alert alert-secondary text-center my-3">
+                        <h4 class="alert-heading mb-1">26 HR / 0.90 = 29 HR</h4>
+                        <p class="mb-0 small text-muted">Este jugador tiene una "tasa neutralizada" superior a la de Juan Pérez.</p>
+                    </div>
+
+                    <p>A pesar de que Juan Pérez conectó más HR (30 vs. 26), el segundo jugador demostró tener más poder real en un contexto más difícil.</p>
+
+                    <div class="alert alert-warning mt-4">
+                        <strong>⚠️ Advertencia importante:</strong>
+                        <ul class="mb-0 mt-2">
+                            <li>Los ajustes por PF se deben aplicar con cuidado en muestras pequeñas (menos de 100 juegos).</li>
+                            <li>No uses el PF para ajustar estadísticas de un solo juego.</li>
+                            <li>Si el IC del PF incluye el 1.00 (categoría "Sugerente" o "Inconcluso"), no se debe aplicar el ajuste, ya que no hay certeza estadística del efecto.</li>
+                            <li>Un PF de 1.00 significa que el parque no tiene efecto. En ese caso, no se aplica ningún ajuste.</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <!-- ... final de la sección de metodología ... -->
+                    
+                    
+                </div>
+            </div>
+        </div>
+    </div>
+        </div>
+
+    </div>
+     <!-- FOOTER GLOBAL -->
+    <footer class="bg-dark text-light text-center py-4 mt-5 border-top border-success border-3">
+        <div class="container">
+            <h5 class="fw-bold mb-2 text-white d-flex justify-content-center align-items-center">
+                <img src="logo.png" alt="Logo" class="footer-logo me-2">
+                Baseball Cuba Data
+            </h5>
+            <p class="mb-2 text-light opacity-75">La base de datos del béisbol cubano</p>
+            <p class="mb-0 text-light small">
+                &copy; 2026 Baseball Cuba Data. Estudio de Factores de Parque (Series 32–65).<br>
+            </p>
+        </div>
+    </footer>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
