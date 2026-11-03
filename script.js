@@ -188,8 +188,12 @@ function initStadiums() {
     if (!select) return;
 
     select.innerHTML = '';
-    // Ordenar alfabéticamente
-    stadiumsData.sort((a, b) => a.stadium.localeCompare(b.stadium));
+    // NUEVO: Ordenar por cantidad de juegos (de mayor a menor)
+    stadiumsData.sort((a, b) => {
+        const gamesA = a.totals?.games || 0;
+        const gamesB = b.totals?.games || 0;
+        return gamesB - gamesA; 
+    });
     
     stadiumsData.forEach((s, index) => {
         select.innerHTML += `<option value="${index}">${s.stadium}</option>`;
